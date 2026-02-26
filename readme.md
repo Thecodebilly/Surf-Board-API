@@ -17,6 +17,17 @@ Express + Postgres API for leaderboard records.
 }
 ```
 
+
+## Profanity filtering
+
+`POST /records` uses a normalization-based profanity detector that:
+
+- checks a broad corpus of explicit terms and slurs,
+- catches common obfuscation (`f.u.c.k`, `b1tch`, `f@ggot`),
+- blocks numeric sexual slang such as `69`.
+
+You can extend the corpus in `profanity.js`.
+
 ## Database table
 
 ```sql

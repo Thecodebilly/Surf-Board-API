@@ -4,32 +4,7 @@ const express = require('express');
 const { Pool } = require('pg');
 
 const app = express();
-
-const PROFANE_WORDS = [
-  'asshole',
-  'bastard',
-  'bitch',
-  'bullshit',
-  'cunt',
-  'damn',
-  'dick',
-  'fuck',
-  'motherfucker',
-  'nigga',
-  'nigger',
-  'piss',
-  'shit',
-  'slut',
-  'whore'
-];
-
-const containsProfanity = (value) => {
-  const normalized = value.toLowerCase();
-  return PROFANE_WORDS.some((word) => {
-    const pattern = new RegExp(`(^|[^a-z])${word}([^a-z]|$)`, 'i');
-    return pattern.test(normalized);
-  });
-};
+const { containsProfanity } = require('./profanity');
 
 const buildPoolConfig = () => {
   if (process.env.DATABASE_PUBLIC_URL) {
