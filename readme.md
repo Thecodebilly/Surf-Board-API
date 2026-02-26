@@ -17,6 +17,17 @@ Express + Postgres API for leaderboard records.
 }
 ```
 
+### POST /records response
+
+```json
+{
+  "id": 1,
+  "name": "player-name",
+  "score": 123,
+  "created_at": "2026-02-26T12:00:00.000Z"
+}
+```
+
 
 ## Profanity filtering
 
