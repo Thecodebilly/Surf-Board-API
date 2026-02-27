@@ -94,6 +94,8 @@ const normalizeForLookup = (value) =>
     .map((char) => LEET_MAP[char] ?? char)
     .join('');
 
+const collapseRepeatedChars = (value) => value.replace(/([a-z0-9])\1+/g, '$1');
+
 const containsProfanity = (value) => {
   if (typeof value !== 'string') {
     return false;
@@ -106,10 +108,17 @@ const containsProfanity = (value) => {
 
   const normalizedWords = normalized.split(/[^a-z0-9]+/).filter(Boolean);
   const compact = normalized.replace(/[^a-z0-9]/g, '');
+  const collapsedNormalized = collapseRepeatedChars(normalized);
+  const collapsedWords = collapsedNormalized.split(/[^a-z0-9]+/).filter(Boolean);
+  const collapsedCompact = collapsedNormalized.replace(/[^a-z0-9]/g, '');
 
   if (
     NUMERIC_PROFANITY_TERMS.some(
-      (term) => normalizedWords.includes(term) || compact.includes(term)
+      (term) =>
+        normalizedWords.includes(term) ||
+        collapsedWords.includes(term) ||
+        compact.includes(term) ||
+        collapsedCompact.includes(term)
     )
   ) {
     return true;
@@ -122,6 +131,10 @@ const containsProfanity = (value) => {
     }
 
     if (term.length >= 4 && compact.includes(term)) {
+      return true;
+    }
+
+    if (term.length >= 4 && collapsedCompact.includes(term)) {
       return true;
     }
 

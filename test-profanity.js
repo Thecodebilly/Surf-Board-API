@@ -6,7 +6,11 @@ const blocked = [
   'f.u.c.k',
   'F@ggot',
   's h i t',
+  'fuuuuuck',
+  'shiiiit',
+  'biiitch',
   'mother-fucker',
+  'motherffffucker',
   'player69',
   '69',
   'B1TCH'
