@@ -69,7 +69,7 @@ app.post('/records', async (req, res) => {
 
   try {
     const result = await pool.query(
-      'INSERT INTO records (name, score) VALUES ($1, $2) RETURNING id, name, score, created_at',
+      'INSERT INTO records (name, score, created_at) VALUES ($1, $2, NOW()) RETURNING id, name, score, created_at',
       [cleanName, score]
     );
 
