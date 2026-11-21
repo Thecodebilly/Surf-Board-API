@@ -6,6 +6,12 @@ const { Pool } = require('pg');
 const app = express();
 const { validateRecord } = require('./records');
 
+// The Surf CYD web emulator calls this API from the browser.
+const ALLOWED_ORIGINS = new Set([
+  'https://surf-cyd-production.up.railway.app',
+  'https://billy-shaw.com'
+]);
+
 const buildPoolConfig = () => {
   if (process.env.DATABASE_PUBLIC_URL) {
     return {
@@ -30,6 +36,20 @@ const pool = new Pool(buildPoolConfig());
 // listener that error crashes the process.
 pool.on('error', (error) => {
   console.error('Idle Postgres client error:', error.message);
+});
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  res.setHeader('Vary', 'Origin');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  return next();
 });
 
 app.use(express.json({ limit: '4kb' }));
