@@ -5,7 +5,7 @@ Express + Postgres API for leaderboard records.
 ## Endpoints
 
 - `GET /health` - checks API + database connectivity.
-- `GET /records` - returns all rows from `records` ordered by score.
+- `GET /records` - returns the top 100 rows from `records` ordered by score.
 - `POST /records` - adds a record with profanity filtering on the `name` field. `score` must be a whole number from 0 to 2147483647, and names are cut to 20 characters.
 
 Browser calls are allowed (CORS) from the Surf CYD emulator at `https://surf-cyd-production.up.railway.app` and `https://billy-shaw.com`.

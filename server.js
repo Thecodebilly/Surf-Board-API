@@ -73,7 +73,7 @@ app.get('/health', async (_req, res) => {
 app.get('/records', async (_req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, name, score, created_at FROM records ORDER BY score DESC, created_at ASC'
+      'SELECT id, name, score, created_at FROM records ORDER BY score DESC, created_at ASC LIMIT 100'
     );
 
     return res.json(result.rows);
