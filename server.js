@@ -4,7 +4,7 @@ const express = require('express');
 const { Pool } = require('pg');
 
 const app = express();
-const { containsProfanity } = require('./profanity');
+const { validateRecord } = require('./records');
 
 const buildPoolConfig = () => {
   if (process.env.DATABASE_PUBLIC_URL) {
@@ -51,26 +51,15 @@ app.get('/records', async (_req, res) => {
 });
 
 app.post('/records', async (req, res) => {
-  const { name, score } = req.body;
-
-  if (typeof name !== 'string' || !name.trim()) {
-    return res.status(400).json({ error: 'name is required and must be a non-empty string' });
-  }
-
-  if (!Number.isFinite(score)) {
-    return res.status(400).json({ error: 'score is required and must be a number' });
-  }
-
-  const cleanName = name.trim();
-
-  if (containsProfanity(cleanName)) {
-    return res.status(400).json({ error: 'Profanity is not allowed in player names' });
+  const record = validateRecord(req.body);
+  if (record.error) {
+    return res.status(400).json({ error: record.error });
   }
 
   try {
     const result = await pool.query(
       'INSERT INTO records (name, score, created_at) VALUES ($1, $2, NOW()) RETURNING id, name, score, created_at',
-      [cleanName, score]
+      [record.name, record.score]
     );
 
     return res.status(201).json(result.rows[0]);
