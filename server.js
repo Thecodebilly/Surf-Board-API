@@ -4,7 +4,13 @@ const express = require('express');
 const { Pool } = require('pg');
 
 const app = express();
-const { containsProfanity } = require('./profanity');
+const { validateRecord } = require('./records');
+
+// The Surf CYD web emulator calls this API from the browser.
+const ALLOWED_ORIGINS = new Set([
+  'https://surf-cyd-production.up.railway.app',
+  'https://billy-shaw.com'
+]);
 
 const buildPoolConfig = () => {
   if (process.env.DATABASE_PUBLIC_URL) {
@@ -26,7 +32,34 @@ const buildPoolConfig = () => {
 
 const pool = new Pool(buildPoolConfig());
 
-app.use(express.json());
+// An idle client loses its connection when Postgres restarts; without a
+// listener that error crashes the process.
+pool.on('error', (error) => {
+  console.error('Idle Postgres client error:', error.message);
+});
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  res.setHeader('Vary', 'Origin');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  return next();
+});
+
+app.use(express.json({ limit: '4kb' }));
+
+app.use((error, _req, res, next) => {
+  if (error.type === 'entity.parse.failed' || error.type === 'entity.too.large') {
+    return res.status(400).json({ error: 'Body must be a small JSON object' });
+  }
+  return next(error);
+});
 
 app.get('/health', async (_req, res) => {
   try {
@@ -40,7 +73,7 @@ app.get('/health', async (_req, res) => {
 app.get('/records', async (_req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, name, score, created_at FROM records ORDER BY score DESC, created_at ASC'
+      'SELECT id, name, score, created_at FROM records ORDER BY score DESC, created_at ASC LIMIT 100'
     );
 
     return res.json(result.rows);
@@ -51,26 +84,15 @@ app.get('/records', async (_req, res) => {
 });
 
 app.post('/records', async (req, res) => {
-  const { name, score } = req.body;
-
-  if (typeof name !== 'string' || !name.trim()) {
-    return res.status(400).json({ error: 'name is required and must be a non-empty string' });
-  }
-
-  if (!Number.isFinite(score)) {
-    return res.status(400).json({ error: 'score is required and must be a number' });
-  }
-
-  const cleanName = name.trim();
-
-  if (containsProfanity(cleanName)) {
-    return res.status(400).json({ error: 'Profanity is not allowed in player names' });
+  const record = validateRecord(req.body);
+  if (record.error) {
+    return res.status(400).json({ error: record.error });
   }
 
   try {
     const result = await pool.query(
       'INSERT INTO records (name, score, created_at) VALUES ($1, $2, NOW()) RETURNING id, name, score, created_at',
-      [cleanName, score]
+      [record.name, record.score]
     );
 
     return res.status(201).json(result.rows[0]);
