@@ -26,7 +26,20 @@ const buildPoolConfig = () => {
 
 const pool = new Pool(buildPoolConfig());
 
-app.use(express.json());
+// An idle client loses its connection when Postgres restarts; without a
+// listener that error crashes the process.
+pool.on('error', (error) => {
+  console.error('Idle Postgres client error:', error.message);
+});
+
+app.use(express.json({ limit: '4kb' }));
+
+app.use((error, _req, res, next) => {
+  if (error.type === 'entity.parse.failed' || error.type === 'entity.too.large') {
+    return res.status(400).json({ error: 'Body must be a small JSON object' });
+  }
+  return next(error);
+});
 
 app.get('/health', async (_req, res) => {
   try {
